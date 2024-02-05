@@ -1,0 +1,3 @@
+class DateFormat {
+  void date() {}
+}

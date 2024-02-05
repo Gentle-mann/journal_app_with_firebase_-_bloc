@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "99672888618",
+    "project_id": "bloc-gallery-app",
+    "storage_bucket": "bloc-gallery-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99672888618:android:432ac6c41d63dceca67a53",
+        "android_client_info": {
+          "package_name": "com.example.bloc_gallery_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUP8-ml1z3iOOa8cbt67zyJQY7OkUQxFo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99672888618:android:e32cd52ed2bbc5f3a67a53",
+        "android_client_info": {
+          "package_name": "com.example.firebase_journal_app_with_bloc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUP8-ml1z3iOOa8cbt67zyJQY7OkUQxFo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
