@@ -9,10 +9,12 @@ import '../auth_errors/auth_errors.dart';
 abstract class AppState {
   final bool isLoading;
   final AuthenticationError? authenticationError;
+  final bool? isInSearch;
 
   const AppState({
     required this.isLoading,
     this.authenticationError,
+    this.isInSearch,
   });
 }
 
@@ -26,9 +28,11 @@ class AppStateLoggedIn extends AppState {
     required this.user,
     required this.journals,
     AuthenticationError? authenticationError,
+    bool? isInSearch,
   }) : super(
           isLoading: isLoading,
           authenticationError: authenticationError,
+          isInSearch: isInSearch,
         );
 
   @override
@@ -109,9 +113,11 @@ class AppStateIsInOverviewScreen extends AppState {
     required this.journal,
     required bool isLoading,
     AuthenticationError? authenticationError,
+    bool? isInSearch,
   }) : super(
           isLoading: isLoading,
           authenticationError: authenticationError,
+          isInSearch: isInSearch,
         );
 }
 
@@ -127,6 +133,22 @@ class AppStateSavedJournal extends AppState {
   }) : super(
           isLoading: isLoading,
           authenticationError: authenticationError,
+        );
+}
+
+@immutable
+class AppStateIsInSearch extends AppState {
+  final User user;
+
+  const AppStateIsInSearch({
+    required this.user,
+    required bool isLoading,
+    AuthenticationError? authenticationError,
+    required bool isInSearch,
+  }) : super(
+          isLoading: isLoading,
+          authenticationError: authenticationError,
+          isInSearch: isInSearch,
         );
 }
 

@@ -11,6 +11,7 @@ class Journal {
   final String text;
   final String dateTime;
   final String color;
+  final bool isBookmarked;
 
   const Journal({
     required this.text,
@@ -19,6 +20,7 @@ class Journal {
     required this.documentId,
     required this.userId,
     required this.images,
+    required this.isBookmarked,
   });
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -28,35 +30,37 @@ class Journal {
       'text': text,
       'dateTime': dateTime,
       'color': color,
+      'isBookMarked': isBookmarked,
     };
   }
 
   Journal.fromSnapshot(
     QueryDocumentSnapshot<Map<String, dynamic>> snapshot,
   )   : documentId = snapshot.id,
-        userId = snapshot.data()["userId"],
+        userId = snapshot.data()["userId"] as String,
         text = snapshot.data()["text"] as String,
         images = snapshot.data()["images"] as List<dynamic>,
         color = snapshot.data()["color"] as String,
-        dateTime = snapshot.data()["dateTime"] as String;
+        dateTime = snapshot.data()["dateTime"] as String,
+        isBookmarked = snapshot.data()["isBookmarked"] ?? false;
 
-  static final journals = [
-    Journal(
-      text: 'Today, I went to the beach with my parents. I had a lot of fun',
-      dateTime: DateTime.now().subtract(const Duration(days: 1)).toString(),
-      color: 'ff0000',
-      documentId: '',
-      userId: '',
-      images: [],
-    ),
-  ];
+  Journal.fromDocumentSnapshot(DocumentSnapshot snapshot)
+      : documentId = snapshot.id,
+        userId = snapshot.get("userId") as String,
+        text = snapshot.get("text") as String,
+        images = snapshot.get("images") as List<dynamic>,
+        color = snapshot.get("color") as String,
+        dateTime = snapshot.get("dateTime") as String,
+        isBookmarked = snapshot.get("isBookmarked") ?? false;
+
   Journal.empty()
       : documentId = '',
         userId = '',
         images = [],
         text = '',
         dateTime = DateTime.now().toString(),
-        color = '';
+        color = '',
+        isBookmarked = false;
   Journal copyWith({
     String? documentId,
     String? userId,
@@ -64,6 +68,7 @@ class Journal {
     String? text,
     String? dateTime,
     String? color,
+    bool? isBookmarked,
   }) {
     return Journal(
       documentId: documentId ?? this.documentId,
@@ -72,6 +77,7 @@ class Journal {
       text: text ?? this.text,
       dateTime: dateTime ?? this.dateTime,
       color: color ?? this.color,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
     );
   }
 
@@ -83,6 +89,7 @@ class Journal {
       text: map['text'] as String,
       dateTime: map['dateTime'] as String,
       color: map['color'] as String,
+      isBookmarked: map['isBookmarked'] as bool,
     );
   }
 

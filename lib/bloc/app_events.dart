@@ -1,5 +1,6 @@
 import 'package:firebase_journal_app_with_bloc/models/journal_model.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 @immutable
 abstract class AppEvent {
@@ -8,9 +9,13 @@ abstract class AppEvent {
 
 @immutable
 class AppEventUploadImage implements AppEvent {
-  final String filePathToUpload;
+  final List<XFile> imageFiles;
+  final bool isEdit;
 
-  const AppEventUploadImage({required this.filePathToUpload});
+  const AppEventUploadImage({
+    required this.imageFiles,
+    required this.isEdit,
+  });
 }
 
 @immutable
@@ -107,4 +112,32 @@ class AppEventDeleteJournal implements AppEvent {
   const AppEventDeleteJournal({
     required this.id,
   });
+}
+
+@immutable
+class AppEventAddedToBookmark implements AppEvent {
+  final Journal journal;
+
+  const AppEventAddedToBookmark({
+    required this.journal,
+  });
+}
+
+@immutable
+class AppEventSearchedJournal implements AppEvent {
+  final List<Journal> journals;
+
+  const AppEventSearchedJournal({
+    required this.journals,
+  });
+}
+
+@immutable
+class AppEventIsInSearch implements AppEvent {
+  const AppEventIsInSearch();
+}
+
+@immutable
+class AppEventExitSearch implements AppEvent {
+  const AppEventExitSearch();
 }

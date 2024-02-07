@@ -3,12 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_journal_app_with_bloc/bloc/app_blocs.dart';
 import 'package:firebase_journal_app_with_bloc/bloc/app_events.dart';
 import 'package:firebase_journal_app_with_bloc/bloc/app_states.dart';
+import 'package:firebase_journal_app_with_bloc/cubits/dark_mode_cubit.dart';
 import 'package:firebase_journal_app_with_bloc/firebase_options.dart';
 import 'package:firebase_journal_app_with_bloc/loading/loading_dialog.dart';
+import 'package:firebase_journal_app_with_bloc/search_delegate/search_journal_delegate.dart';
 import 'package:firebase_journal_app_with_bloc/utils/dialogs/auth_error_dialog.dart';
 import 'package:firebase_journal_app_with_bloc/views/journal_overview.dart';
 import 'package:firebase_journal_app_with_bloc/views/journals_list_view.dart';
 import 'package:firebase_journal_app_with_bloc/views/login_view.dart';
+import 'package:firebase_journal_app_with_bloc/views/settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,7 +25,22 @@ void main() async {
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
   );
-  runApp(const MyApp());
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => AppBloc()
+            ..add(
+              const AppEventInitializeApp(),
+            ),
+        ),
+        BlocProvider(
+          create: (_) => DarkModeCubit(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -30,13 +48,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AppBloc>(
-      create: (_) => AppBloc()..add(const AppEventInitializeApp()),
-      child: MaterialApp(
+    return BlocBuilder<DarkModeCubit, bool>(builder: (context, isDarkMode) {
+      return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Jumprack',
         theme: ThemeData(
-          brightness: Brightness.dark,
+          brightness: isDarkMode ? Brightness.dark : Brightness.light,
           //colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
@@ -44,8 +61,9 @@ class MyApp extends StatelessWidget {
           builder: (context, appState) {
             if (appState is AppStateLoggedOut) {
               return const LoginView();
-            }
-            if (appState is AppStateLoggedIn) {
+            } else if (appState is AppStateIsInSettingsScreen) {
+              return const SettingsView();
+            } else if (appState is AppStateLoggedIn) {
               return const JournalsListView();
             } else if (appState is AppStateIsInEditScreen) {
               return AddEditJournalView(
@@ -81,9 +99,18 @@ class MyApp extends StatelessWidget {
                 authenticationError: appState.authenticationError!,
               );
             }
+            if (appState.isInSearch != null && appState.isInSearch!) {
+              showSearch(
+                context: context,
+                delegate: SearchJournalDelegate(),
+              );
+            }
+            if (appState.isInSearch != null && !appState.isInSearch!) {
+              Navigator.of(context).pop();
+            }
           },
         ),
-      ),
-    );
+      );
+    });
   }
 }

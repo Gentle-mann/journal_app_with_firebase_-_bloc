@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_journal_app_with_bloc/bloc/app_blocs.dart';
 import 'package:firebase_journal_app_with_bloc/bloc/app_events.dart';
+import 'package:firebase_journal_app_with_bloc/bloc/app_states.dart';
 import 'package:firebase_journal_app_with_bloc/services/journal_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../models/journal_model.dart';
-import 'settings_view.dart';
 
 class JournalsListView extends StatelessWidget {
   const JournalsListView({super.key});
@@ -22,25 +22,25 @@ class JournalsListView extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              context.read<AppBloc>().add(
+                    const AppEventIsInSearch(),
+                  );
+            },
             icon: const Icon(Icons.search),
           ),
           IconButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: ((context) {
-                    return const SettingsView();
-                  }),
-                ),
-              );
+              context.read<AppBloc>().add(
+                    const AppEventIsInSettings(),
+                  );
             },
             icon: const Icon(Icons.settings),
           ),
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: JournalService().getJournals(),
+          stream: context.read<AppBloc>().state.journals,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
@@ -49,8 +49,11 @@ class JournalsListView extends StatelessWidget {
             } else {
               final journals = snapshot.data!.docs;
               journals.sort((a, b) {
-                return DateTime.parse(b["dateTime"])
-                    .compareTo(DateTime.parse(a["dateTime"]));
+                return DateTime.parse(b["dateTime"]).compareTo(
+                  DateTime.parse(
+                    a["dateTime"],
+                  ),
+                );
               });
               return ListView.builder(
                 itemCount: journals.length,
@@ -58,7 +61,6 @@ class JournalsListView extends StatelessWidget {
                   final journal = journals[index];
                   return JournalCard(
                     journal: Journal.fromSnapshot(journal),
-                    documentId: journal.id,
                   );
                 },
               );
@@ -98,18 +100,16 @@ class JournalCard extends StatelessWidget {
   const JournalCard({
     super.key,
     required this.journal,
-    required this.documentId,
   });
 
   final Journal journal;
-  final String documentId;
 
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: Key(documentId),
+      key: Key(journal.documentId),
       onDismissed: (direction) {
-        JournalService().deleteJournal(documentId: documentId);
+        JournalService().deleteJournal(documentId: journal.documentId);
       },
       background: Container(
         decoration: BoxDecoration(

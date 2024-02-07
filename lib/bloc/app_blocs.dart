@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_journal_app_with_bloc/auth_errors/auth_errors.dart';
@@ -9,7 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
-import '../utils/m.dart';
+import '../utils/user.dart';
 
 class AppBloc extends Bloc<AppEvent, AppState> {
   AppBloc()
@@ -19,13 +21,16 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     on<AppEventInitializeApp>((event, emit) async {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        print('usercredential: no user');
         emit(
           const AppStateLoggedOut(
             isLoading: false,
           ),
         );
       } else {
+        print('user: ${user.email}');
         final journals = _getJournals();
+
         emit(
           AppStateLoggedIn(
             isLoading: false,
@@ -97,28 +102,28 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       }
     });
     on<AppEventDeleteAccount>((event, emit) async {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = getUser();
       if (user == null) {
         emit(
           const AppStateLoggedOut(isLoading: false),
         );
         return;
       }
-      emit(
-        AppStateLoggedIn(
-          isLoading: true,
-          user: user,
-          journals: state.journals ?? const Stream.empty(),
-        ),
-      );
+      // emit(
+      //   AppStateLoggedIn(
+      //     isLoading: true,
+      //     user: user,
+      //     journals: state.journals ?? const Stream.empty(),
+      //   ),
+      //);
       try {
         final folder = await FirebaseStorage.instance.ref(user.uid).listAll();
         for (var folderItem in folder.items) {
-          print('download url: ${await folderItem.getDownloadURL()}');
           await folderItem.delete().catchError((_) {});
         }
         await user.delete();
         await FirebaseAuth.instance.signOut();
+
         emit(
           const AppStateLoggedOut(
             isLoading: false,
@@ -126,10 +131,8 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         );
       } on FirebaseAuthException catch (e) {
         emit(
-          AppStateLoggedIn(
+          AppStateLoggedOut(
             isLoading: false,
-            user: user,
-            journals: state.journals ?? const Stream.empty(),
             authenticationError: AuthenticationError.from(e),
           ),
         );
@@ -141,15 +144,34 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         );
       }
     });
-    on<AppEventUploadImage>((event, emit) {
-      final user = state.user;
+    on<AppEventUploadImage>((event, emit) async {
+      if (event.isEdit) {
+        emit(
+          AppStateIsInEditScreen(
+            journal: state.journal,
+            isLoading: true,
+          ),
+        );
+      } else {
+        emit(
+          const AppStateIsInAddScreen(
+            isLoading: true,
+          ),
+        );
+      }
+
       try {
-        List images = [];
-        for (var i in images) {
-          FirebaseStorage.instance
-              .ref(user!.uid)
+        List<String> imageUrls = [];
+        final images = event.imageFiles;
+        for (var image in images) {
+          final imageUpload = FirebaseStorage.instance
+              .ref(getUser()!.uid)
               .child(const Uuid().v4())
-              .putFile(i);
+              .putFile(
+                File(image.path),
+              );
+          final url = await (await imageUpload).ref.getDownloadURL();
+          imageUrls.add(url);
         }
       } on FirebaseAuthException catch (e) {
         emit(
@@ -174,6 +196,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         AppStateIsInOverviewScreen(
           isLoading: false,
           journal: event.journal,
+          isInSearch: false,
         ),
       );
     });
@@ -255,10 +278,54 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         ),
       );
     });
+    on<AppEventAddedToBookmark>((event, emit) {
+      JournalService().updateJournal(journal: event.journal);
+      emit(
+        AppStateIsInOverviewScreen(
+          journal: event.journal,
+          isLoading: false,
+        ),
+      );
+    });
+    on<AppEventIsInSearch>((event, emit) {
+      emit(AppStateLoggedIn(
+        user: state.user!,
+        journals: state.journals!,
+        isInSearch: true,
+        isLoading: false,
+      ));
+    });
+    on<AppEventExitSearch>((event, emit) {
+      emit(
+        AppStateLoggedIn(
+          isLoading: false,
+          user: state.user!,
+          journals: state.journals!,
+          isInSearch: false,
+        ),
+      );
+    });
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _getJournals() {
     return JournalService().getJournals();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> searchJournals(
+      String searchQuery) {
+    return JournalService()
+        .journalsCollection
+        .where(
+          'text',
+          isGreaterThanOrEqualTo: searchQuery.isEmpty ? 0 : searchQuery,
+          isLessThan: searchQuery.isEmpty
+              ? null
+              : searchQuery.substring(0, searchQuery.length - 1) +
+                  String.fromCharCode(
+                    searchQuery.codeUnitAt(searchQuery.length - 1) + 1,
+                  ),
+        )
+        .snapshots();
   }
 
   @override

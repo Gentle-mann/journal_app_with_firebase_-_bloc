@@ -99,6 +99,7 @@ class AddEditJournalView extends HookWidget {
                           documentId: journal.documentId,
                           userId: '',
                           images: imagesUrl.value,
+                          isBookmarked: false,
                         );
                         if (isEdit) {
                           context.read<AppBloc>().add(
@@ -145,7 +146,7 @@ class AddEditJournalView extends HookWidget {
             ),
             SmoothPageIndicator(
               controller: pageController,
-              count: imagesUrl.value.length,
+              count: 0,
             ),
             const SizedBox(
               height: 10,

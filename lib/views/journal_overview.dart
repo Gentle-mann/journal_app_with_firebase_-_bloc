@@ -1,9 +1,12 @@
 import 'package:firebase_journal_app_with_bloc/bloc/app_blocs.dart';
 import 'package:firebase_journal_app_with_bloc/bloc/app_events.dart';
+import 'package:firebase_journal_app_with_bloc/utils/snakcbar/show_snack_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/journal_model.dart';
 
@@ -12,6 +15,13 @@ class JournalOverview extends StatelessWidget {
   final Journal journal;
   @override
   Widget build(BuildContext context) {
+    void showTextCopiedSnackbar() {
+      showSnackbar(
+        context: context,
+        text: 'Journal text copied successfully!',
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -36,8 +46,17 @@ class JournalOverview extends StatelessWidget {
             icon: const Icon(Icons.edit),
           ),
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.star_border),
+            onPressed: () {
+              final newJournal = journal.copyWith(
+                isBookmarked: !journal.isBookmarked,
+              );
+              context.read<AppBloc>().add(
+                    AppEventAddedToBookmark(
+                      journal: newJournal,
+                    ),
+                  );
+            },
+            icon: Icon(journal.isBookmarked ? Icons.star : Icons.star_border),
           ),
           IconButton(
             onPressed: () {
@@ -67,30 +86,33 @@ class JournalOverview extends StatelessWidget {
                                 const SizedBox(
                                   height: 20,
                                 ),
-                                const Column(
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    BottomSheetText('Share as:'),
-                                    SizedBox(
+                                    const BottomSheetText('Share as:'),
+                                    const SizedBox(
                                       height: 20,
                                     ),
-                                    ShareBottomSheetAction(
+                                    const ShareBottomSheetAction(
                                       text: 'ZIP',
                                       iconData: Icons.folder_zip,
                                     ),
                                     ShareBottomSheetAction(
                                       text: 'Plain Text',
                                       iconData: Icons.menu,
+                                      onTap: () {
+                                        Share.share(journal.text);
+                                      },
                                     ),
-                                    ShareBottomSheetAction(
+                                    const ShareBottomSheetAction(
                                       text: 'HTML',
                                       iconData: Icons.html,
                                     ),
-                                    ShareBottomSheetAction(
+                                    const ShareBottomSheetAction(
                                       text: 'DOCX',
                                       iconData: Icons.document_scanner,
                                     ),
-                                    ShareBottomSheetAction(
+                                    const ShareBottomSheetAction(
                                         text: 'PDF',
                                         iconData: Icons.picture_as_pdf),
                                   ],
@@ -106,7 +128,14 @@ class JournalOverview extends StatelessWidget {
             icon: const Icon(Icons.share),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () async {
+              await Clipboard.setData(
+                ClipboardData(
+                  text: journal.text,
+                ),
+              );
+              showTextCopiedSnackbar();
+            },
             icon: const Icon(Icons.copy),
           ),
         ],
@@ -191,33 +220,38 @@ class ShareBottomSheetAction extends StatelessWidget {
     super.key,
     required this.text,
     required this.iconData,
+    this.onTap,
   });
   final String text;
   final IconData iconData;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            BottomSheetIcon(
-              iconData: iconData,
-            ),
-            const SizedBox(
-              width: 20,
-            ),
-            BottomSheetText(text),
-            const SizedBox(
-              height: 10,
-            ),
-          ],
-        ),
-        const SizedBox(
-          height: 20,
-        ),
-      ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              BottomSheetIcon(
+                iconData: iconData,
+              ),
+              const SizedBox(
+                width: 20,
+              ),
+              BottomSheetText(text),
+              const SizedBox(
+                height: 10,
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 20,
+          ),
+        ],
+      ),
     );
   }
 }
